@@ -1,0 +1,79 @@
+# Flutter / Dart
+.dart_tool/
+.packages
+.pub/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+
+# Generated files
+**/generated_plugin_registrant.dart
+
+# Android
+android/.gradle/
+android/local.properties
+android/.idea/
+android/app/debug/
+android/app/profile/
+android/app/release/
+android/key.properties
+
+# iOS
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/App.framework
+ios/Flutter/Generated.xcconfig
+ios/Runner/GeneratedPluginRegistrant.*
+
+# macOS
+macos/Pods/
+macos/Flutter/Flutter.framework
+macos/Flutter/Flutter.podspec
+macos/Flutter/GeneratedPluginRegistrant.swift
+
+# Windows
+windows/flutter/ephemeral/
+
+# Linux
+linux/flutter/ephemeral/
+
+# Web
+web/.dart_tool/
+
+# IDEs
+.idea/
+.vscode/
+*.iml
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Firebase / sensitive files
+google-services.json
+GoogleService-Info.plist
+
+# Keystores / signing files
+*.jks
+*.keystore
+*.p12
+*.pem
+
+# Coverage
+coverage/
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
