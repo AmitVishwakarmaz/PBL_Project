@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:math';
+import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:csv/csv.dart';
@@ -11,6 +12,7 @@ import '../utils/rssi_processor.dart';
 import '../utils/distance_estimator.dart';
 import '../services/ble_scanner.dart';
 import 'storage_service.dart';
+import 'central_server_service.dart';
 import 'dart:convert';
 import '../models/anchor_network.dart';
 
@@ -126,6 +128,18 @@ class MeasurementRepository extends ChangeNotifier {
   // Remote Scanned P2P measurements: maps "TEST-A00X_TEST-A00Y" to distance in meters
   final Map<String, double> _remoteDistances = {};
   
+  // Central Server & Tracking State
+  CentralServerService? centralServerService;
+  TrackedLocation? _localTrackedLocation;
+
+  TrackedLocation? get trackedLocation {
+    final synced = centralServerService?.latestSyncedLocation;
+    if (synced != null && DateTime.now().difference(synced.timestamp).inSeconds < 5) {
+      return synced;
+    }
+    return _localTrackedLocation ?? calculateDeviceLocation();
+  }
+
   // Anchor map state
   AnchorMap? _lockedAnchorMap;
   AnchorMap? _currentCalibrationMap;
@@ -191,16 +205,21 @@ class MeasurementRepository extends ChangeNotifier {
 
     // 1. Update or create BLE Device
     if (_devices.containsKey(packet.deviceId)) {
-      _devices[packet.deviceId]!.addRssi(
+      final dev = _devices[packet.deviceId]!;
+      dev.addRssi(
         packet.rssi,
         txPower: packet.txPower,
         sequenceNumber: packet.sequenceNumber,
       );
-      _devices[packet.deviceId]!.friendlyName = packet.friendlyName;
+      dev.friendlyName = packet.friendlyName;
+      dev.role = packet.role;
+      dev.roomName = packet.roomName;
     } else {
       _devices[packet.deviceId] = BleDevice(
         deviceId: packet.deviceId,
         friendlyName: packet.friendlyName,
+        role: packet.role,
+        roomName: packet.roomName,
         lastSeen: DateTime.now(),
         rssi: packet.rssi,
         txPower: packet.txPower,
@@ -240,7 +259,19 @@ class MeasurementRepository extends ChangeNotifier {
 
     _allRecords.add(record);
 
-    // 3. If a test mode is active and this is the target device, record details
+    // 3. Handle Role-Specific Processing:
+    final currentRole = _storageService.getDeviceRole();
+    if (currentRole == DeviceRole.tracked) {
+      // We are the tracked device: recalculate our indoor position and room
+      _localTrackedLocation = calculateDeviceLocation();
+    } else if (currentRole == DeviceRole.anchor) {
+      // We are an anchor node: if this packet is from a tracked device, report sighting to central server
+      if (packet.role == 'TRACKED' || packet.deviceId.startsWith('TEST-C')) {
+        _reportAnchorSighting(packet.deviceId, packet.rssi, estimatedDistance);
+      }
+    }
+
+    // 4. If a test mode is active and this is the target device, record details
     if (_isTestActive && packet.deviceId == _activeTargetDeviceId) {
       if (_activeTestType == "Stability") {
         _activeStabilityRssiBuffer.add(packet.rssi);
@@ -607,6 +638,143 @@ class MeasurementRepository extends ChangeNotifier {
     _currentCalibrationMap = null;
     await _storageService.clearAnchorMap();
     notifyListeners();
+  }
+
+  void _reportAnchorSighting(String targetDeviceId, int rssi, double distance) {
+    if (centralServerService == null) return;
+    final report = AnchorReport(
+      anchorId: _storageService.getDeviceId(),
+      roomName: _storageService.getAssignedRoom(),
+      anchorX: _storageService.getAnchorX(),
+      anchorY: _storageService.getAnchorY(),
+      targetDeviceId: targetDeviceId,
+      rssi: rssi,
+      distance: distance,
+      timestamp: DateTime.now(),
+    );
+
+    if (centralServerService!.isServerRunning) {
+      centralServerService!.addDirectReport(report);
+    } else {
+      final host = _storageService.getServerHost();
+      final port = _storageService.getServerPort();
+      if (host.isNotEmpty) {
+        centralServerService!.sendAnchorReportToServer(
+          serverHost: host,
+          serverPort: port,
+          report: report,
+        );
+      }
+    }
+  }
+
+  TrackedLocation? calculateDeviceLocation() {
+    final String localId = _storageService.getDeviceId();
+    final List<BleDevice> anchorDevices = _devices.values
+        .where((d) => d.role == 'ANCHOR' || d.deviceId.startsWith('TEST-A'))
+        .where((d) => d.rawRssiHistory.isNotEmpty)
+        .toList();
+
+    if (anchorDevices.isEmpty) return null;
+
+    // Room resolution: room of nearest/majority anchors
+    final Map<String, int> roomCounts = {};
+    for (var a in anchorDevices) {
+      roomCounts[a.roomName] = (roomCounts[a.roomName] ?? 0) + 1;
+    }
+    String resolvedRoom = _storageService.getAssignedRoom();
+    int maxCount = 0;
+    roomCounts.forEach((r, c) {
+      if (c > maxCount) {
+        maxCount = c;
+        resolvedRoom = r;
+      }
+    });
+
+    final Map<String, AnchorCoordinate> anchorCoords = {};
+    if (_lockedAnchorMap != null) {
+      for (var a in _lockedAnchorMap!.anchors) {
+        anchorCoords[a.anchorId] = a;
+      }
+    }
+
+    final defaultPositions = [
+      const Offset(0.0, 0.0),
+      const Offset(6.0, 0.0),
+      const Offset(3.0, 5.0),
+      const Offset(0.0, 5.0),
+      const Offset(6.0, 5.0),
+    ];
+
+    double weightedX = 0.0;
+    double weightedY = 0.0;
+    double totalWeight = 0.0;
+    String nearestAnchor = anchorDevices.first.deviceId;
+    double nearestDist = 999.0;
+
+    for (int i = 0; i < anchorDevices.length; i++) {
+      final dev = anchorDevices[i];
+      final dist = dev.getEstimatedDistance(_rssiProcessor, _distanceEstimator);
+      if (dist <= 0) continue;
+
+      if (dist < nearestDist) {
+        nearestDist = dist;
+        nearestAnchor = dev.deviceId;
+      }
+
+      double ax = 0.0;
+      double ay = 0.0;
+      if (anchorCoords.containsKey(dev.deviceId)) {
+        ax = anchorCoords[dev.deviceId]!.x;
+        ay = anchorCoords[dev.deviceId]!.y;
+      } else {
+        final fallback = defaultPositions[i % defaultPositions.length];
+        ax = fallback.dx;
+        ay = fallback.dy;
+      }
+
+      final double weight = 1.0 / max(0.2, dist * dist);
+      weightedX += ax * weight;
+      weightedY += ay * weight;
+      totalWeight += weight;
+    }
+
+    if (totalWeight <= 0) return null;
+
+    final double solvedX = weightedX / totalWeight;
+    final double solvedY = weightedY / totalWeight;
+    final double confidence = min(98.0, 45.0 + anchorDevices.length * 18.0);
+
+    return TrackedLocation(
+      deviceId: localId,
+      x: solvedX,
+      y: solvedY,
+      roomName: resolvedRoom,
+      confidence: confidence,
+      nearestAnchorId: nearestAnchor,
+      nearestDistance: nearestDist < 900 ? nearestDist : 1.0,
+      timestamp: DateTime.now(),
+      source: 'BLE_LOCAL',
+    );
+  }
+
+  Future<void> calibrateAtOneMeter(String targetDeviceId) async {
+    final dev = _devices[targetDeviceId];
+    if (dev == null || dev.rawRssiHistory.isEmpty) {
+      throw Exception("No signal received from $targetDeviceId. Make sure device is nearby.");
+    }
+
+    final stats = dev.getStats(_rssiProcessor);
+    final double calibratedRssi0 = stats.median.clamp(-85.0, -45.0);
+    await _storageService.setRssi0(calibratedRssi0);
+    await _storageService.setD0(1.0);
+    reloadConfig();
+  }
+
+  Future<void> setPathLossEnvironment(double n) async {
+    final double safeN = n.clamp(1.9, 3.2);
+    await _storageService.setPathLossN(safeN);
+    reloadConfig();
   }
 
   @override

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
 import '../services/storage_service.dart';
 import '../services/ble_advertiser.dart';
@@ -9,6 +8,7 @@ import '../services/measurement_repository.dart';
 import '../models/ble_device.dart';
 import '../utils/rssi_processor.dart';
 import '../utils/distance_estimator.dart';
+import '../utils/app_theme.dart';
 
 class DashboardView extends StatefulWidget {
   final StorageService storageService;
@@ -77,7 +77,7 @@ class _DashboardViewState extends State<DashboardView> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Some permissions were denied. BLE operations may fail.'),
-            backgroundColor: Colors.redAccent,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -92,8 +92,9 @@ class _DashboardViewState extends State<DashboardView> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: const Color(0xFF171721),
-          title: const Text('Edit Device Identity', style: TextStyle(fontFamily: 'Outfit')),
+          backgroundColor: AppColors.surface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadii.lg)),
+          title: const Text('Edit Device Identity', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -102,21 +103,15 @@ class _DashboardViewState extends State<DashboardView> {
                 decoration: const InputDecoration(
                   labelText: 'Friendly Name',
                   hintText: 'e.g. Phone A',
-                  labelStyle: TextStyle(color: Color(0xFF00F0FF)),
-                  enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
-                  focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF00F0FF))),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.md),
               TextField(
                 controller: indexController,
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(
                   labelText: 'Device Index (e.g. 1 for TEST-A001)',
                   hintText: 'e.g. 1',
-                  labelStyle: TextStyle(color: Color(0xFF00F0FF)),
-                  enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
-                  focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF00F0FF))),
                 ),
               ),
             ],
@@ -124,7 +119,7 @@ class _DashboardViewState extends State<DashboardView> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel', style: TextStyle(color: Colors.white60)),
+              child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -217,7 +212,7 @@ class _DashboardViewState extends State<DashboardView> {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -226,57 +221,64 @@ class _DashboardViewState extends State<DashboardView> {
               children: [
                 const Text(
                   'SYSTEM STATUS',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.0, color: Color(0xFFD946EF)),
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.8, color: AppColors.primaryAccent),
                 ),
                 _buildStatusIndicator(isBtOn, isBtOn ? 'Bluetooth ON' : 'Bluetooth OFF'),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.sm),
             if (!_permissionsGranted) ...[
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(AppSpacing.sm),
                 decoration: BoxDecoration(
-                  color: Colors.redAccent.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.redAccent.withOpacity(0.3)),
+                  color: AppColors.errorSubtle,
+                  borderRadius: BorderRadius.circular(AppRadii.md),
+                  border: Border.all(color: AppColors.error.withOpacity(0.3)),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.warning_amber_rounded, color: Colors.redAccent),
-                    const SizedBox(width: 12),
+                    const Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 20),
+                    const SizedBox(width: AppSpacing.sm),
                     const Expanded(
                       child: Text(
                         'BLE Permissions are missing! Scanning and advertising will fail.',
-                        style: TextStyle(fontSize: 13, color: Colors.white),
+                        style: TextStyle(fontSize: 12, color: AppColors.textPrimary),
                       ),
                     ),
                     TextButton(
                       onPressed: _requestPermissions,
-                      child: const Text('GRANT'),
+                      child: const Text('GRANT', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryAccent)),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.sm),
             ],
             // Show individual permissions
             Wrap(
-              spacing: 8,
-              runSpacing: 8,
+              spacing: AppSpacing.xs,
+              runSpacing: AppSpacing.xs,
               children: _permissionStatuses.entries.map((entry) {
                 final String name = entry.key.toString().replaceAll('Permission.', '').toUpperCase();
                 final bool isGranted = entry.value.isGranted;
                 return Chip(
                   avatar: Icon(
                     isGranted ? Icons.check_circle : Icons.cancel,
-                    size: 16,
-                    color: isGranted ? const Color(0xFF00F0FF) : Colors.white24,
+                    size: 14,
+                    color: isGranted ? AppColors.success : AppColors.textTertiary,
                   ),
-                  label: Text(name, style: const TextStyle(fontSize: 10)),
-                  backgroundColor: const Color(0xFF0F0F13),
+                  label: Text(
+                    name,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: isGranted ? AppColors.textPrimary : AppColors.textTertiary,
+                    ),
+                  ),
+                  backgroundColor: AppColors.surfaceSubtle,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    side: BorderSide(color: isGranted ? const Color(0xFF00F0FF).withOpacity(0.2) : Colors.white10),
+                    borderRadius: BorderRadius.circular(AppRadii.sm),
+                    side: BorderSide(color: isGranted ? AppColors.borderStrong : AppColors.border),
                   ),
                 );
               }).toList(),
@@ -293,7 +295,7 @@ class _DashboardViewState extends State<DashboardView> {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(AppSpacing.md),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -303,32 +305,32 @@ class _DashboardViewState extends State<DashboardView> {
                 children: [
                   const Text(
                     'LOCAL IDENTITY',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.0, color: Color(0xFF00F0FF)),
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.8, color: AppColors.primaryAccent),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   Wrap(
-                    spacing: 12,
-                    runSpacing: 8,
+                    spacing: AppSpacing.sm,
+                    runSpacing: 6,
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       Text(
                         friendlyName,
-                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF00F0FF).withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: const Color(0xFF00F0FF).withOpacity(0.3)),
+                          color: AppColors.surfaceSubtle,
+                          borderRadius: BorderRadius.circular(AppRadii.sm),
+                          border: Border.all(color: AppColors.border),
                         ),
                         child: Text(
                           deviceId,
                           style: const TextStyle(
-                            fontSize: 12,
+                            fontSize: 11,
                             fontWeight: FontWeight.bold,
                             fontFamily: 'Courier',
-                            color: Color(0xFF00F0FF),
+                            color: AppColors.primaryAccent,
                           ),
                         ),
                       ),
@@ -339,7 +341,7 @@ class _DashboardViewState extends State<DashboardView> {
             ),
             OutlinedButton.icon(
               onPressed: _showEditDeviceDialog,
-              icon: const Icon(Icons.edit_rounded, size: 16),
+              icon: const Icon(Icons.edit_rounded, size: 14),
               label: const Text('EDIT'),
             ),
           ],
@@ -355,7 +357,7 @@ class _DashboardViewState extends State<DashboardView> {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -364,24 +366,24 @@ class _DashboardViewState extends State<DashboardView> {
               children: [
                 const Text(
                   'ADVERTISER',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.0, color: Colors.white54),
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.8, color: AppColors.textSecondary),
                 ),
                 _buildStatusIndicator(isAdv, isAdv ? 'ACTIVE' : 'IDLE'),
               ],
             ),
-            const SizedBox(height: 16),
-            Text('Packets sent: $packets', style: const TextStyle(fontSize: 14)),
+            const SizedBox(height: AppSpacing.md),
+            Text('Packets sent: $packets', style: const TextStyle(fontSize: 13, color: AppColors.textPrimary)),
             const SizedBox(height: 4),
-            Text('Sequence number: $seq', style: const TextStyle(fontSize: 14)),
-            const SizedBox(height: 16),
+            Text('Sequence number: $seq', style: const TextStyle(fontSize: 13, color: AppColors.textPrimary)),
+            const SizedBox(height: AppSpacing.md),
             SizedBox(
               width: double.infinity,
               child: isAdv
                   ? OutlinedButton(
                       onPressed: () => widget.bleAdvertiser.stopAdvertising(),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.redAccent,
-                        side: const BorderSide(color: Colors.redAccent, width: 1.5),
+                        foregroundColor: AppColors.error,
+                        side: const BorderSide(color: AppColors.error, width: 1.0),
                       ),
                       child: const Text('STOP ADVERTISING'),
                     )
@@ -409,7 +411,7 @@ class _DashboardViewState extends State<DashboardView> {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -418,17 +420,17 @@ class _DashboardViewState extends State<DashboardView> {
               children: [
                 const Text(
                   'SCANNER',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.0, color: Colors.white54),
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.8, color: AppColors.textSecondary),
                 ),
                 _buildStatusIndicator(isScan, isScan ? 'SCANNING' : 'IDLE'),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.md),
             Text(
               'Devices detected: ${widget.measurementRepository.devices.length}',
-              style: const TextStyle(fontSize: 14),
+              style: const TextStyle(fontSize: 13, color: AppColors.textPrimary),
             ),
-            const SizedBox(height: 24), // Spacer to align buttons
+            const SizedBox(height: 24),
             const SizedBox(height: 4),
             SizedBox(
               width: double.infinity,
@@ -436,8 +438,8 @@ class _DashboardViewState extends State<DashboardView> {
                   ? OutlinedButton(
                       onPressed: () => widget.bleScanner.stopScanning(),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.redAccent,
-                        side: const BorderSide(color: Colors.redAccent, width: 1.5),
+                        foregroundColor: AppColors.error,
+                        side: const BorderSide(color: AppColors.error, width: 1.0),
                       ),
                       child: const Text('STOP SCANNING'),
                     )
@@ -465,7 +467,7 @@ class _DashboardViewState extends State<DashboardView> {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -474,27 +476,35 @@ class _DashboardViewState extends State<DashboardView> {
               children: [
                 const Text(
                   'LIVE DETECTED TEST DEVICES',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 1.0, color: Color(0xFF00F0FF)),
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 0.8, color: AppColors.primaryAccent),
                 ),
-                Text(
-                  '${scannedDevices.length} Online',
-                  style: const TextStyle(fontSize: 12, color: Colors.white54),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceSubtle,
+                    borderRadius: BorderRadius.circular(AppRadii.sm),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Text(
+                    '${scannedDevices.length} Online',
+                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.md),
             if (scannedDevices.isEmpty)
-              const Center(
+              Center(
                 child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 32.0),
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
                   child: Column(
                     children: [
-                      Icon(Icons.radar_rounded, size: 48, color: Colors.white24),
-                      SizedBox(height: 12),
-                      Text(
+                      Icon(Icons.radar_outlined, size: 40, color: AppColors.textTertiary.withOpacity(0.6)),
+                      const SizedBox(height: AppSpacing.sm),
+                      const Text(
                         'No test packets detected yet.\nEnsure other devices are actively advertising.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.white30, fontSize: 13),
+                        style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
                       ),
                     ],
                   ),
@@ -504,18 +514,18 @@ class _DashboardViewState extends State<DashboardView> {
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: DataTable(
-                  columnSpacing: 20,
-                  headingRowColor: MaterialStateProperty.all(const Color(0xFF0F0F13)),
+                  columnSpacing: 18,
+                  headingRowColor: MaterialStateProperty.all(AppColors.surfaceSubtle),
                   columns: const [
-                    DataColumn(label: Text('Device ID', style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('Friendly Name', style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('Raw RSSI', style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('Samples', style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('Median', style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('Average', style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('Std Dev', style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('Est Dist', style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('Seq Num', style: TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text('Device ID', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: AppColors.textSecondary))),
+                    DataColumn(label: Text('Friendly Name', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: AppColors.textSecondary))),
+                    DataColumn(label: Text('Raw RSSI', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: AppColors.textSecondary))),
+                    DataColumn(label: Text('Samples', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: AppColors.textSecondary))),
+                    DataColumn(label: Text('Median', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: AppColors.textSecondary))),
+                    DataColumn(label: Text('Average', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: AppColors.textSecondary))),
+                    DataColumn(label: Text('Std Dev', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: AppColors.textSecondary))),
+                    DataColumn(label: Text('Est Dist', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: AppColors.textSecondary))),
+                    DataColumn(label: Text('Seq Num', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: AppColors.textSecondary))),
                   ],
                   rows: scannedDevices.map((device) {
                     final stats = device.getStats(processor);
@@ -530,32 +540,32 @@ class _DashboardViewState extends State<DashboardView> {
 
                     return DataRow(
                       cells: [
-                        DataCell(Text(device.deviceId, style: const TextStyle(fontFamily: 'Courier', fontWeight: FontWeight.bold, color: Color(0xFF00F0FF)))),
-                        DataCell(Text(device.friendlyName)),
+                        DataCell(Text(device.deviceId, style: const TextStyle(fontFamily: 'Courier', fontWeight: FontWeight.bold, color: AppColors.primaryAccent))),
+                        DataCell(Text(device.friendlyName, style: const TextStyle(color: AppColors.textPrimary))),
                         DataCell(
                           Text(
                             device.rawRssiHistory.isNotEmpty ? '${device.rawRssiHistory.last} dBm' : 'N/A',
-                            style: const TextStyle(fontWeight: FontWeight.w500),
+                            style: const TextStyle(fontWeight: FontWeight.w500, color: AppColors.textPrimary),
                           ),
                         ),
-                        DataCell(Text('${stats.sampleCount}')),
-                        DataCell(Text(stats.sampleCount > 0 ? '${stats.median.toStringAsFixed(1)}' : 'N/A')),
-                        DataCell(Text(stats.sampleCount > 0 ? '${stats.mean.toStringAsFixed(1)}' : 'N/A')),
+                        DataCell(Text('${stats.sampleCount}', style: const TextStyle(color: AppColors.textPrimary))),
+                        DataCell(Text(stats.sampleCount > 0 ? '${stats.median.toStringAsFixed(1)}' : 'N/A', style: const TextStyle(color: AppColors.textPrimary))),
+                        DataCell(Text(stats.sampleCount > 0 ? '${stats.mean.toStringAsFixed(1)}' : 'N/A', style: const TextStyle(color: AppColors.textPrimary))),
                         DataCell(
                           Text(
                             stats.sampleCount > 0 ? stats.stdDev.toStringAsFixed(2) : 'N/A',
                             style: TextStyle(
-                              color: stats.stdDev > 5.0 ? Colors.orangeAccent : const Color(0xFF00F0FF),
+                              color: stats.stdDev > 5.0 ? AppColors.primaryAccent : AppColors.textPrimary,
                             ),
                           ),
                         ),
                         DataCell(
                           Text(
                             stats.sampleCount > 0 ? '${estDist.toStringAsFixed(2)} m' : 'N/A',
-                            style: const TextStyle(color: Color(0xFFD946EF), fontWeight: FontWeight.bold),
+                            style: const TextStyle(color: AppColors.primaryAccent, fontWeight: FontWeight.bold),
                           ),
                         ),
-                        DataCell(Text(device.lastSequenceNumber != null ? '${device.lastSequenceNumber}' : '-')),
+                        DataCell(Text(device.lastSequenceNumber != null ? '${device.lastSequenceNumber}' : '-', style: const TextStyle(color: AppColors.textSecondary))),
                       ],
                     );
                   }).toList(),
@@ -576,25 +586,16 @@ class _DashboardViewState extends State<DashboardView> {
           height: 8,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: active ? const Color(0xFF00F0FF) : Colors.white24,
-            boxShadow: active
-                ? [
-                    const BoxShadow(
-                      color: Color(0xFF00F0FF),
-                      blurRadius: 6,
-                      spreadRadius: 1,
-                    )
-                  ]
-                : null,
+            color: active ? AppColors.success : AppColors.textTertiary,
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 6),
         Text(
           label,
           style: TextStyle(
             fontSize: 11,
-            fontWeight: FontWeight.bold,
-            color: active ? Colors.white : Colors.white30,
+            fontWeight: FontWeight.w600,
+            color: active ? AppColors.textPrimary : AppColors.textTertiary,
           ),
         ),
       ],

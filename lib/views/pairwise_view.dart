@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../services/measurement_repository.dart';
 import '../models/ble_device.dart';
 import '../utils/rssi_processor.dart';
+import '../utils/app_theme.dart';
 
 class ManualPairwiseEntry {
   final String scannerId;
@@ -49,8 +50,9 @@ class _PairwiseViewState extends State<PairwiseView> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: const Color(0xFF171721),
-          title: const Text('Add Pairwise Entry', style: TextStyle(fontFamily: 'Outfit')),
+          backgroundColor: AppColors.surface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadii.lg)),
+          title: const Text('Add Pairwise Entry', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -59,25 +61,30 @@ class _PairwiseViewState extends State<PairwiseView> {
                   controller: _scannerController,
                   decoration: const InputDecoration(labelText: 'Scanner ID (e.g. Phone B)'),
                 ),
+                const SizedBox(height: AppSpacing.sm),
                 TextField(
                   controller: _transmitterController,
                   decoration: const InputDecoration(labelText: 'Transmitter ID (e.g. Phone C)'),
                 ),
+                const SizedBox(height: AppSpacing.sm),
                 TextField(
                   controller: _rssiController,
                   keyboardType: TextInputType.number,
                   decoration: const InputDecoration(labelText: 'Latest RSSI (dBm)'),
                 ),
+                const SizedBox(height: AppSpacing.sm),
                 TextField(
                   controller: _samplesController,
                   keyboardType: TextInputType.number,
                   decoration: const InputDecoration(labelText: 'Sample Count'),
                 ),
+                const SizedBox(height: AppSpacing.sm),
                 TextField(
                   controller: _meanController,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   decoration: const InputDecoration(labelText: 'Mean RSSI'),
                 ),
+                const SizedBox(height: AppSpacing.sm),
                 TextField(
                   controller: _stdDevController,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -89,7 +96,7 @@ class _PairwiseViewState extends State<PairwiseView> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel', style: TextStyle(color: Colors.white60)),
+              child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
             ),
             ElevatedButton(
               onPressed: () {
@@ -149,7 +156,6 @@ class _PairwiseViewState extends State<PairwiseView> {
         final RssiProcessor processor = RssiProcessor();
 
         // 1. Gather automatic entries (where self is the scanner)
-        // We'll construct a combined list of automatic + manual entries
         final List<Map<String, dynamic>> combinedRows = [];
 
         // Add auto rows
@@ -182,19 +188,20 @@ class _PairwiseViewState extends State<PairwiseView> {
         }
 
         return Scaffold(
+          backgroundColor: AppColors.primaryBg,
           body: SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(AppSpacing.md),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildExplainCard(),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.md),
                 _buildMatrixCard(combinedRows),
               ],
             ),
           ),
           floatingActionButton: FloatingActionButton(
-            backgroundColor: const Color(0xFFD946EF),
+            backgroundColor: AppColors.primaryAccent,
             onPressed: _showAddEntryDialog,
             tooltip: 'Add Entry from other phone',
             child: const Icon(Icons.add_rounded, color: Colors.white),
@@ -207,32 +214,32 @@ class _PairwiseViewState extends State<PairwiseView> {
   Widget _buildExplainCard() {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Row(
               children: [
-                Icon(Icons.hub_rounded, color: Color(0xFF00F0FF)),
-                SizedBox(width: 12),
+                Icon(Icons.hub_outlined, color: AppColors.primaryAccent, size: 20),
+                SizedBox(width: AppSpacing.sm),
                 Text(
                   'PAIRWISE ANCHOR-TO-ANCHOR TESTING',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.0, color: Color(0xFF00F0FF)),
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.8, color: AppColors.primaryAccent),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.sm),
             const Text(
               'For self-localization (coordinate calculation), we must verify that anchors can successfully scan each other pairwise. This screen builds the scanner-to-transmitter grid.',
-              style: TextStyle(fontSize: 13, color: Colors.white70),
+              style: TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.4),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.xs),
             RichText(
               text: const TextSpan(
-                style: TextStyle(fontSize: 13, color: Colors.white60),
+                style: TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.4),
                 children: [
-                  TextSpan(text: 'Note: ', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFD946EF))),
-                  TextSpan(text: 'Since there is no shared backend database in this phase, Phone A cannot query Phone B\'s scan results directly. Click the fuchsia "+" button to manually type Phone B\'s results and see the unified matrix.'),
+                  TextSpan(text: 'Note: ', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryAccent)),
+                  TextSpan(text: 'Since there is no shared backend database in this phase, Phone A cannot query Phone B\'s scan results directly. Click the "+" button to manually type Phone B\'s results and see the unified matrix.'),
                 ],
               ),
             ),
@@ -245,7 +252,7 @@ class _PairwiseViewState extends State<PairwiseView> {
   Widget _buildMatrixCard(List<Map<String, dynamic>> rows) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -254,7 +261,7 @@ class _PairwiseViewState extends State<PairwiseView> {
               children: [
                 const Text(
                   'PAIRWISE MEASUREMENT SUMMARY',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.0, color: Color(0xFFD946EF)),
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.8, color: AppColors.primaryAccent),
                 ),
                 if (_manualEntries.isNotEmpty)
                   TextButton(
@@ -264,23 +271,23 @@ class _PairwiseViewState extends State<PairwiseView> {
                       });
                     },
                     style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size.zero),
-                    child: const Text('Clear Manual'),
+                    child: const Text('Clear Manual', style: TextStyle(fontSize: 12, color: AppColors.error)),
                   ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.md),
             if (rows.isEmpty)
-              const Center(
+              Center(
                 child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 32.0),
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
                   child: Column(
                     children: [
-                      Icon(Icons.hub_outlined, size: 48, color: Colors.white24),
-                      SizedBox(height: 12),
-                      Text(
+                      Icon(Icons.hub_outlined, size: 40, color: AppColors.textTertiary.withOpacity(0.6)),
+                      const SizedBox(height: AppSpacing.sm),
+                      const Text(
                         'No pairwise data available.\nActivate scanning or tap the "+" button below to add entries.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.white30, fontSize: 13),
+                        style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
                       ),
                     ],
                   ),
@@ -290,40 +297,41 @@ class _PairwiseViewState extends State<PairwiseView> {
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: DataTable(
-                  columnSpacing: 24,
-                  headingRowColor: MaterialStateProperty.all(const Color(0xFF0F0F13)),
+                  columnSpacing: 18,
+                  headingRowColor: MaterialStateProperty.all(AppColors.surfaceSubtle),
                   columns: const [
-                    DataColumn(label: Text('Scanner (Rx)', style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('Transmitter (Tx)', style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('RSSI', style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('Samples', style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('Mean RSSI', style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('Std Dev', style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('Source', style: TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text('Scanner (Rx)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: AppColors.textSecondary))),
+                    DataColumn(label: Text('Transmitter (Tx)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: AppColors.textSecondary))),
+                    DataColumn(label: Text('RSSI', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: AppColors.textSecondary))),
+                    DataColumn(label: Text('Samples', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: AppColors.textSecondary))),
+                    DataColumn(label: Text('Mean RSSI', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: AppColors.textSecondary))),
+                    DataColumn(label: Text('Std Dev', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: AppColors.textSecondary))),
+                    DataColumn(label: Text('Source', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: AppColors.textSecondary))),
                   ],
                   rows: rows.map((row) {
                     final bool isManual = row['isManual'] as bool;
                     return DataRow(
                       cells: [
-                        DataCell(Text(row['scanner'] as String, style: const TextStyle(fontWeight: FontWeight.bold))),
-                        DataCell(Text(row['transmitter'] as String, style: const TextStyle(fontFamily: 'Courier', color: Color(0xFF00F0FF)))),
-                        DataCell(Text('${row['rssi']} dBm')),
-                        DataCell(Text('${row['samples']}')),
-                        DataCell(Text('${(row['mean'] as double).toStringAsFixed(1)} dBm')),
-                        DataCell(Text((row['stdDev'] as double).toStringAsFixed(2))),
+                        DataCell(Text(row['scanner'] as String, style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary))),
+                        DataCell(Text(row['transmitter'] as String, style: const TextStyle(fontFamily: 'Courier', color: AppColors.primaryAccent, fontWeight: FontWeight.bold))),
+                        DataCell(Text('${row['rssi']} dBm', style: const TextStyle(color: AppColors.textPrimary))),
+                        DataCell(Text('${row['samples']}', style: const TextStyle(color: AppColors.textPrimary))),
+                        DataCell(Text('${(row['mean'] as double).toStringAsFixed(1)} dBm', style: const TextStyle(color: AppColors.textPrimary))),
+                        DataCell(Text((row['stdDev'] as double).toStringAsFixed(2), style: const TextStyle(color: AppColors.textPrimary))),
                         DataCell(
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              color: isManual ? Colors.purple.withOpacity(0.2) : Colors.green.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(4),
+                              color: isManual ? AppColors.surfaceSubtle : AppColors.successSubtle,
+                              borderRadius: BorderRadius.circular(AppRadii.sm),
+                              border: Border.all(color: isManual ? AppColors.border : AppColors.success.withOpacity(0.3)),
                             ),
                             child: Text(
                               isManual ? 'MANUAL' : 'AUTO-SCAN',
                               style: TextStyle(
                                 fontSize: 9,
                                 fontWeight: FontWeight.bold,
-                                color: isManual ? Colors.purpleAccent : Colors.greenAccent,
+                                color: isManual ? AppColors.textSecondary : AppColors.success,
                               ),
                             ),
                           ),

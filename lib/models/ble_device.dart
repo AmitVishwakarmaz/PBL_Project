@@ -2,8 +2,10 @@ import '../utils/rssi_processor.dart';
 import '../utils/distance_estimator.dart';
 
 class BleDevice {
-  final String deviceId;       // e.g. "TEST-A001"
-  String friendlyName;         // e.g. "Phone A"
+  final String deviceId;       // e.g. "TEST-A001" or "TEST-C001"
+  String friendlyName;         // e.g. "Anchor 1"
+  String role;                 // "ANCHOR", "TRACKED", "TEST"
+  String roomName;             // "Room A"
   final List<int> rawRssiHistory = [];
   final List<DateTime> timestamps = [];
   int? txPower;
@@ -15,6 +17,8 @@ class BleDevice {
   BleDevice({
     required this.deviceId,
     required this.friendlyName,
+    this.role = 'ANCHOR',
+    this.roomName = 'Room A',
     required this.lastSeen,
     int? rssi,
     this.txPower,

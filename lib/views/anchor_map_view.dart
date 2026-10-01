@@ -7,6 +7,7 @@ import '../services/ble_advertiser.dart';
 import '../services/ble_scanner.dart';
 import '../models/ble_device.dart';
 import '../utils/rssi_processor.dart';
+import '../utils/app_theme.dart';
 
 class AnchorMapView extends StatefulWidget {
   final StorageService storageService;
@@ -43,7 +44,7 @@ class _AnchorMapViewState extends State<AnchorMapView> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Starting anchor calibration session ($_calibrationDurationSeconds seconds)...'),
-        backgroundColor: const Color(0xFFD946EF),
+        backgroundColor: AppColors.primaryAccent,
       ),
     );
   }
@@ -53,6 +54,7 @@ class _AnchorMapViewState extends State<AnchorMapView> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Calibration session stopped. Processing results...'),
+        backgroundColor: AppColors.charcoal,
       ),
     );
   }
@@ -79,13 +81,13 @@ class _AnchorMapViewState extends State<AnchorMapView> {
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF171721),
+      backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
       ),
       builder: (context) {
         return Padding(
-          padding: const EdgeInsets.all(24.0),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -96,28 +98,28 @@ class _AnchorMapViewState extends State<AnchorMapView> {
                   Text(
                     anchor.anchorId == selfId ? '${anchor.anchorId} (Self)' : anchor.anchorId,
                     style: const TextStyle(
-                      fontFamily: 'Outfit',
-                      fontSize: 20,
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF00F0FF),
+                      color: AppColors.textPrimary,
                     ),
                   ),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.white10,
-                      borderRadius: BorderRadius.circular(6),
+                      color: AppColors.surfaceSubtle,
+                      borderRadius: BorderRadius.circular(AppRadii.sm),
+                      border: Border.all(color: AppColors.border),
                     ),
                     child: Text(
                       anchor.anchorId == selfId ? 'Origin Anchor' : 'Anchor',
-                      style: const TextStyle(fontSize: 10, color: Colors.white60),
+                      style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
                     ),
                   )
                 ],
               ),
-              const SizedBox(height: 16),
-              const Divider(color: Colors.white10),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.md),
+              const Divider(color: AppColors.border),
+              const SizedBox(height: AppSpacing.md),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -125,7 +127,7 @@ class _AnchorMapViewState extends State<AnchorMapView> {
                   _buildDetailItem('Relative Y', '${anchor.y.toStringAsFixed(2)} m'),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.md),
               if (stats != null) ...[
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -134,7 +136,7 @@ class _AnchorMapViewState extends State<AnchorMapView> {
                     _buildDetailItem('Median RSSI', '${stats.median.toStringAsFixed(1)} dBm'),
                   ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.md),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -145,23 +147,19 @@ class _AnchorMapViewState extends State<AnchorMapView> {
               ] else if (anchor.anchorId != selfId) ...[
                 const Text(
                   'Scanned remotely via P2P relay advertisement.',
-                  style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: Colors.white38),
+                  style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: AppColors.textTertiary),
                 ),
               ] else ...[
                 const Text(
                   'Local phone serving as relative origin coordinate point.',
-                  style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: Colors.white38),
+                  style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: AppColors.textTertiary),
                 ),
               ],
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSpacing.xl),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF00F0FF),
-                    foregroundColor: Colors.black,
-                  ),
                   child: const Text('Close'),
                 ),
               ),
@@ -176,9 +174,9 @@ class _AnchorMapViewState extends State<AnchorMapView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 12, color: Colors.white38)),
+        Text(label, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
         const SizedBox(height: 4),
-        Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+        Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
       ],
     );
   }
@@ -198,7 +196,15 @@ class _AnchorMapViewState extends State<AnchorMapView> {
         final activeMap = lockedMap ?? currentCalib;
         
         return Scaffold(
+          backgroundColor: AppColors.primaryBg,
           appBar: AppBar(
+            backgroundColor: AppColors.surface,
+            foregroundColor: AppColors.textPrimary,
+            elevation: 0,
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(1.0),
+              child: Container(color: AppColors.border, height: 1.0),
+            ),
             title: const Text('Anchor Map Localization'),
             actions: [
               if (activeMap != null)
@@ -222,15 +228,15 @@ class _AnchorMapViewState extends State<AnchorMapView> {
               // 2. Map Canvas (CustomPainter)
               Expanded(
                 child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  margin: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF171721),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white10),
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(AppRadii.lg),
+                    border: Border.all(color: AppColors.border),
                   ),
                   child: activeMap != null
                       ? ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(AppRadii.lg),
                           child: Stack(
                             children: [
                               InteractiveViewer(
@@ -244,17 +250,18 @@ class _AnchorMapViewState extends State<AnchorMapView> {
                               ),
                               // Grid metric marker overlay
                               Positioned(
-                                top: 12,
-                                left: 12,
+                                top: AppSpacing.sm,
+                                left: AppSpacing.sm,
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                   decoration: BoxDecoration(
-                                    color: Colors.black54,
-                                    borderRadius: BorderRadius.circular(6),
+                                    color: AppColors.surfaceSubtle,
+                                    borderRadius: BorderRadius.circular(AppRadii.sm),
+                                    border: Border.all(color: AppColors.border),
                                   ),
                                   child: const Text(
                                     'Grid Unit: 1 Meter',
-                                    style: TextStyle(fontSize: 10, color: Colors.white70),
+                                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
                                   ),
                                 ),
                               ),
@@ -263,25 +270,25 @@ class _AnchorMapViewState extends State<AnchorMapView> {
                         )
                       : Center(
                           child: Padding(
-                            padding: const EdgeInsets.all(32.0),
+                            padding: const EdgeInsets.all(AppSpacing.xl),
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Icon(
-                                  Icons.map_rounded,
-                                  size: 64,
-                                  color: Colors.white10,
+                                Icon(
+                                  Icons.map_outlined,
+                                  size: 56,
+                                  color: AppColors.textTertiary.withOpacity(0.5),
                                 ),
-                                const SizedBox(height: 16),
+                                const SizedBox(height: AppSpacing.md),
                                 const Text(
                                   'No Calibration Map Solved Yet',
-                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white30),
+                                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
                                 ),
-                                const SizedBox(height: 8),
+                                const SizedBox(height: AppSpacing.xs),
                                 const Text(
                                   'Set your phones in triangle position, configure duration, and click Start Calibration to begin.',
                                   textAlign: TextAlign.center,
-                                  style: TextStyle(fontSize: 12, color: Colors.white24),
+                                  style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
                                 ),
                               ],
                             ),
@@ -304,20 +311,23 @@ class _AnchorMapViewState extends State<AnchorMapView> {
       final secs = widget.measurementRepository.testSecondsRemaining;
       return Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(12),
-        color: const Color(0xFFD946EF).withOpacity(0.15),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 10),
+        decoration: const BoxDecoration(
+          color: AppColors.primaryAccentSubtle,
+          border: Border(bottom: BorderSide(color: AppColors.border)),
+        ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(strokeWidth: 2.0, color: Color(0xFFD946EF)),
+              width: 14,
+              height: 14,
+              child: CircularProgressIndicator(strokeWidth: 2.0, color: AppColors.primaryAccent),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: AppSpacing.sm),
             Text(
               'Calibrating network... $secs seconds remaining',
-              style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFD946EF)),
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primaryAccent),
             ),
           ],
         ),
@@ -327,16 +337,19 @@ class _AnchorMapViewState extends State<AnchorMapView> {
     if (lockedMap != null) {
       return Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        color: const Color(0xFF00F0FF).withOpacity(0.1),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 10),
+        decoration: const BoxDecoration(
+          color: AppColors.successSubtle,
+          border: Border(bottom: BorderSide(color: AppColors.border)),
+        ),
         child: Row(
           children: [
-            const Icon(Icons.lock_rounded, color: Color(0xFF00F0FF), size: 16),
-            const SizedBox(width: 12),
+            const Icon(Icons.lock_rounded, color: AppColors.success, size: 16),
+            const SizedBox(width: AppSpacing.sm),
             Expanded(
               child: Text(
                 'Map Locked: ${lockedMap.anchors.length} Nodes • Err: ${lockedMap.overallCalibrationError.toStringAsFixed(2)}m • Conf: ${lockedMap.confidence.toStringAsFixed(1)}%',
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF00F0FF)),
+                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.success),
               ),
             ),
           ],
@@ -347,16 +360,19 @@ class _AnchorMapViewState extends State<AnchorMapView> {
     if (currentCalib != null) {
       return Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        color: const Color(0xFFEAB308).withOpacity(0.15),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 10),
+        decoration: const BoxDecoration(
+          color: AppColors.primaryAccentSubtle,
+          border: Border(bottom: BorderSide(color: AppColors.border)),
+        ),
         child: Row(
           children: [
-            const Icon(Icons.warning_amber_rounded, color: Color(0xFFEAB308), size: 16),
-            const SizedBox(width: 12),
+            const Icon(Icons.info_outline_rounded, color: AppColors.primaryAccent, size: 16),
+            const SizedBox(width: AppSpacing.sm),
             Expanded(
               child: Text(
                 'Previewing Calibration Session (Unlocked) • Conf: ${currentCalib.confidence.toStringAsFixed(1)}%',
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFFEAB308)),
+                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primaryAccent),
               ),
             ),
           ],
@@ -366,15 +382,18 @@ class _AnchorMapViewState extends State<AnchorMapView> {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      color: Colors.white.withOpacity(0.02),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 10),
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        border: Border(bottom: BorderSide(color: AppColors.border)),
+      ),
       child: const Row(
         children: [
-          Icon(Icons.satellite_alt_rounded, color: Colors.white30, size: 16),
-          SizedBox(width: 12),
+          Icon(Icons.satellite_alt_rounded, color: AppColors.textTertiary, size: 16),
+          SizedBox(width: AppSpacing.sm),
           Text(
             'Anchor Map: Uncalibrated',
-            style: TextStyle(fontSize: 12, color: Colors.white30),
+            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
           ),
         ],
       ),
@@ -384,16 +403,20 @@ class _AnchorMapViewState extends State<AnchorMapView> {
   Widget _buildControlPanel(bool isCalibrating, AnchorMap? lockedMap, AnchorMap? currentCalib) {
     if (isCalibrating) {
       return Container(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: const BoxDecoration(
+          color: AppColors.surface,
+          border: Border(top: BorderSide(color: AppColors.border)),
+        ),
         child: SizedBox(
           width: double.infinity,
           child: OutlinedButton.icon(
             onPressed: _stopCalibration,
             style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.redAccent,
-              side: const BorderSide(color: Colors.redAccent, width: 1.5),
+              foregroundColor: AppColors.error,
+              side: const BorderSide(color: AppColors.error, width: 1.0),
             ),
-            icon: const Icon(Icons.stop_rounded),
+            icon: const Icon(Icons.stop_rounded, size: 18),
             label: const Text('STOP CALIBRATION'),
           ),
         ),
@@ -402,18 +425,19 @@ class _AnchorMapViewState extends State<AnchorMapView> {
 
     if (currentCalib != null) {
       return Container(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(AppSpacing.md),
         decoration: const BoxDecoration(
-          color: Color(0xFF13131A),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+          color: AppColors.surface,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
+          border: Border(top: BorderSide(color: AppColors.border)),
         ),
         child: Column(
           children: [
             const Text(
               'Dynamic Solve Summary',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white38),
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 0.5),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.sm),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
@@ -423,20 +447,21 @@ class _AnchorMapViewState extends State<AnchorMapView> {
                 _buildMetricColumn('Error', '${currentCalib.overallCalibrationError.toStringAsFixed(2)}m'),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.md),
             Wrap(
-              spacing: 8,
-              runSpacing: 8,
+              spacing: AppSpacing.xs,
+              runSpacing: AppSpacing.xs,
               children: currentCalib.anchors.map((a) {
                 return ActionChip(
                   label: Text('${a.anchorId} (${a.x.toStringAsFixed(1)}, ${a.y.toStringAsFixed(1)})'),
                   onPressed: () => _showAnchorDetails(a, currentCalib),
-                  backgroundColor: Colors.white10,
-                  side: BorderSide.none,
+                  backgroundColor: AppColors.surfaceSubtle,
+                  side: const BorderSide(color: AppColors.border),
+                  labelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
                 );
               }).toList(),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.md),
             Row(
               children: [
                 Expanded(
@@ -447,7 +472,7 @@ class _AnchorMapViewState extends State<AnchorMapView> {
                     child: const Text('REJECT'),
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
@@ -455,14 +480,10 @@ class _AnchorMapViewState extends State<AnchorMapView> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Anchor map calibration accepted and locked locally.'),
-                          backgroundColor: Color(0xFF00F0FF),
+                          backgroundColor: AppColors.success,
                         ),
                       );
                     },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF00F0FF),
-                      foregroundColor: Colors.black,
-                    ),
                     child: const Text('ACCEPT & LOCK'),
                   ),
                 ),
@@ -475,38 +496,40 @@ class _AnchorMapViewState extends State<AnchorMapView> {
 
     if (lockedMap != null) {
       return Container(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(AppSpacing.md),
         decoration: const BoxDecoration(
-          color: Color(0xFF13131A),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+          color: AppColors.surface,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
+          border: Border(top: BorderSide(color: AppColors.border)),
         ),
         child: Column(
           children: [
             const Text(
               'Locked Nodes (Tap to Inspect)',
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white24),
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 0.5),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             Wrap(
-              spacing: 8,
-              runSpacing: 8,
+              spacing: AppSpacing.xs,
+              runSpacing: AppSpacing.xs,
               children: lockedMap.anchors.map((a) {
                 return ActionChip(
                   label: Text('${a.anchorId} (${a.x.toStringAsFixed(1)}, ${a.y.toStringAsFixed(1)})'),
                   onPressed: () => _showAnchorDetails(a, lockedMap),
-                  backgroundColor: const Color(0xFF00F0FF).withOpacity(0.05),
-                  side: BorderSide(color: const Color(0xFF00F0FF).withOpacity(0.2)),
+                  backgroundColor: AppColors.surfaceSubtle,
+                  side: const BorderSide(color: AppColors.border),
+                  labelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
                 );
               }).toList(),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.md),
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
                 onPressed: () {
                   widget.measurementRepository.recalibrateAnchorMap();
                 },
-                icon: const Icon(Icons.restart_alt_rounded),
+                icon: const Icon(Icons.restart_alt_rounded, size: 18),
                 label: const Text('RECALIBRATE'),
               ),
             ),
@@ -517,10 +540,11 @@ class _AnchorMapViewState extends State<AnchorMapView> {
 
     // Default Uncalibrated Control Slider
     return Container(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: const BoxDecoration(
-        color: Color(0xFF13131A),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        color: AppColors.surface,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
+        border: Border(top: BorderSide(color: AppColors.border)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -530,11 +554,11 @@ class _AnchorMapViewState extends State<AnchorMapView> {
             children: [
               const Text(
                 'Calibration Duration',
-                style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.textPrimary),
               ),
               Text(
                 '$_calibrationDurationSeconds Seconds',
-                style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFD946EF)),
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primaryAccent),
               )
             ],
           ),
@@ -543,23 +567,20 @@ class _AnchorMapViewState extends State<AnchorMapView> {
             min: 10,
             max: 60,
             divisions: 10,
-            activeColor: const Color(0xFFD946EF),
+            activeColor: AppColors.primaryAccent,
+            inactiveColor: AppColors.border,
             onChanged: (val) {
               setState(() {
                 _calibrationDurationSeconds = val.round();
               });
             },
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.xs),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
               onPressed: _startCalibration,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFD946EF),
-                foregroundColor: Colors.white,
-              ),
-              icon: const Icon(Icons.play_arrow_rounded),
+              icon: const Icon(Icons.play_arrow_rounded, size: 18),
               label: const Text('START ANCHOR CALIBRATION'),
             ),
           ),
@@ -571,9 +592,9 @@ class _AnchorMapViewState extends State<AnchorMapView> {
   Widget _buildMetricColumn(String label, String value) {
     return Column(
       children: [
-        Text(label, style: const TextStyle(fontSize: 10, color: Colors.white30)),
-        const SizedBox(height: 4),
-        Text(value, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white)),
+        Text(label, style: const TextStyle(fontSize: 10, color: AppColors.textSecondary)),
+        const SizedBox(height: 2),
+        Text(value, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
       ],
     );
   }
@@ -621,7 +642,7 @@ class AnchorMapPainter extends CustomPainter {
 
     // 1. Draw Grid
     final gridPaint = Paint()
-      ..color = Colors.white.withOpacity(0.04)
+      ..color = AppColors.border.withOpacity(0.6)
       ..strokeWidth = 1.0;
     
     final int startY = minY.floor();
@@ -632,7 +653,7 @@ class AnchorMapPainter extends CustomPainter {
       canvas.drawLine(p1, p2, gridPaint);
       
       final tp = TextPainter(
-        text: TextSpan(text: '${y}m', style: TextStyle(color: Colors.white.withOpacity(0.15), fontSize: 8)),
+        text: TextSpan(text: '${y}m', style: TextStyle(color: AppColors.textTertiary.withOpacity(0.7), fontSize: 8)),
         textDirection: TextDirection.ltr,
       )..layout();
       tp.paint(canvas, p1 + const Offset(5, -10));
@@ -646,7 +667,7 @@ class AnchorMapPainter extends CustomPainter {
       canvas.drawLine(p1, p2, gridPaint);
 
       final tp = TextPainter(
-        text: TextSpan(text: '${x}m', style: TextStyle(color: Colors.white.withOpacity(0.15), fontSize: 8)),
+        text: TextSpan(text: '${x}m', style: TextStyle(color: AppColors.textTertiary.withOpacity(0.7), fontSize: 8)),
         textDirection: TextDirection.ltr,
       )..layout();
       tp.paint(canvas, p1 + const Offset(5, 5));
@@ -654,14 +675,14 @@ class AnchorMapPainter extends CustomPainter {
 
     // 2. Draw Axes
     final axisPaint = Paint()
-      ..color = Colors.white.withOpacity(0.1)
+      ..color = AppColors.borderStrong
       ..strokeWidth = 1.5;
     canvas.drawLine(toScreen(minX, 0), toScreen(maxX, 0), axisPaint);
     canvas.drawLine(toScreen(0, minY), toScreen(0, maxY), axisPaint);
 
     // 3. Draw Links between all solved anchors
     final linkPaint = Paint()
-      ..color = const Color(0xFF00F0FF).withOpacity(0.15)
+      ..color = AppColors.primaryAccent.withOpacity(0.3)
       ..strokeWidth = 1.5
       ..style = PaintingStyle.stroke;
     
@@ -675,11 +696,11 @@ class AnchorMapPainter extends CustomPainter {
 
     // 4. Draw Anchor Nodes
     final anchorPaint = Paint()
-      ..color = const Color(0xFF00F0FF)
+      ..color = AppColors.primaryAccent
       ..style = PaintingStyle.fill;
 
     final selfAnchorPaint = Paint()
-      ..color = const Color(0xFFD946EF)
+      ..color = AppColors.charcoal
       ..style = PaintingStyle.fill;
 
     for (final anchor in map.anchors) {
@@ -688,7 +709,7 @@ class AnchorMapPainter extends CustomPainter {
       
       // Node glow
       final glowPaint = Paint()
-        ..color = (isSelf ? const Color(0xFFD946EF) : const Color(0xFF00F0FF)).withOpacity(0.15)
+        ..color = (isSelf ? AppColors.charcoal.withOpacity(0.12) : AppColors.primaryAccent.withOpacity(0.15))
         ..style = PaintingStyle.fill;
       canvas.drawCircle(pos, 14.0, glowPaint);
       
@@ -698,11 +719,11 @@ class AnchorMapPainter extends CustomPainter {
       // Node Label text
       final labelSpan = TextSpan(
         text: '${anchor.anchorId}${isSelf ? " (Self)" : ""}\n(${anchor.x.toStringAsFixed(1)}, ${anchor.y.toStringAsFixed(1)})',
-        style: TextStyle(
-          color: Colors.white,
+        style: const TextStyle(
+          color: AppColors.textPrimary,
           fontSize: 8,
           fontWeight: FontWeight.bold,
-          backgroundColor: Colors.black.withOpacity(0.5),
+          backgroundColor: AppColors.surface,
         ),
       );
       final tp = TextPainter(

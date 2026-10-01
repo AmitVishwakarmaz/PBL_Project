@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../utils/app_theme.dart';
 
 class RssiChart extends StatelessWidget {
   final List<int> rssiSamples;
@@ -19,9 +20,9 @@ class RssiChart extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF0F0F13),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white10),
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadii.md),
+        border: Border.all(color: AppColors.border),
       ),
       child: CustomPaint(
         painter: _RssiChartPainter(
@@ -55,21 +56,21 @@ class _RssiChartPainter extends CustomPainter {
 
     // Paints
     final paintGrid = Paint()
-      ..color = Colors.white.withOpacity(0.06)
+      ..color = AppColors.borderLight
       ..strokeWidth = 1.0;
 
     final paintAxes = Paint()
-      ..color = Colors.white24
+      ..color = AppColors.border
       ..strokeWidth = 1.5;
 
     final paintRaw = Paint()
-      ..color = const Color(0xFFD946EF) // Neon Fuchsia
+      ..color = AppColors.primaryAccentLight
       ..strokeWidth = 1.5
       ..style = PaintingStyle.fill;
 
     final paintLine = Paint()
-      ..color = const Color(0xFF00F0FF) // Neon Cyan
-      ..strokeWidth = 2.5
+      ..color = AppColors.primaryAccent
+      ..strokeWidth = 2.0
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 
@@ -87,7 +88,7 @@ class _RssiChartPainter extends CustomPainter {
       final double rssiVal = minRssi + (i * ((maxRssi - minRssi) / ySplits));
       textPainter.text = TextSpan(
         text: '${rssiVal.toInt()} dBm',
-        style: const TextStyle(fontSize: 8, color: Colors.white38, fontFamily: 'Courier'),
+        style: const TextStyle(fontSize: 9, color: AppColors.textSecondary),
       );
       textPainter.layout();
       textPainter.paint(canvas, Offset(5, y - 10));
@@ -103,7 +104,7 @@ class _RssiChartPainter extends CustomPainter {
       final double timeVal = i * (durationSeconds / xSplits);
       textPainter.text = TextSpan(
         text: '${timeVal.toInt()}s',
-        style: const TextStyle(fontSize: 8, color: Colors.white38, fontFamily: 'Courier'),
+        style: const TextStyle(fontSize: 9, color: AppColors.textSecondary),
       );
       textPainter.layout();
       textPainter.paint(canvas, Offset(x - 5, height - 12));
@@ -117,7 +118,7 @@ class _RssiChartPainter extends CustomPainter {
       // Draw placeholder text
       textPainter.text = const TextSpan(
         text: 'Awaiting signal samples...',
-        style: TextStyle(color: Colors.white12, fontSize: 13, fontStyle: FontStyle.italic),
+        style: TextStyle(color: AppColors.textMuted, fontSize: 13, fontStyle: FontStyle.italic),
       );
       textPainter.layout();
       textPainter.paint(canvas, Offset(width / 2 - 80, height / 2 - 10));
@@ -140,11 +141,6 @@ class _RssiChartPainter extends CustomPainter {
       points.add(Offset(cx, cy));
     }
 
-    // Plot raw samples as points
-    for (var pt in points) {
-      canvas.drawCircle(pt, 2.5, paintRaw);
-    }
-
     // Plot connection lines for trends
     if (points.length > 1) {
       final path = Path()..moveTo(points[0].dx, points[0].dy);
@@ -152,6 +148,11 @@ class _RssiChartPainter extends CustomPainter {
         path.lineTo(points[i].dx, points[i].dy);
       }
       canvas.drawPath(path, paintLine);
+    }
+
+    // Plot raw samples as points
+    for (var pt in points) {
+      canvas.drawCircle(pt, 2.5, paintRaw);
     }
   }
 

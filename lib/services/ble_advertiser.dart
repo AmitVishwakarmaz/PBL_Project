@@ -20,16 +20,26 @@ class BleAdvertiser extends ChangeNotifier {
 
   List<MapEntry<int, int>> Function()? getTopScanDistances;
 
+  bool _isCheckingSupport = false;
+
   BleAdvertiser(this._storageService) {
-    _checkSupport();
-    // Listen to peripheral state changes if available
-    _peripheral.onPeripheralStateChanged?.listen((state) {
-      _isAdvertising = state == PeripheralState.advertising;
-      notifyListeners();
-    });
+    // Safely check support asynchronously without throwing
+    Future.microtask(() => _checkSupport());
+    try {
+      _peripheral.onPeripheralStateChanged?.listen((state) {
+        _isAdvertising = state == PeripheralState.advertising;
+        notifyListeners();
+      }, onError: (e) {
+        debugPrint('Peripheral state listener error: $e');
+      });
+    } catch (e) {
+      debugPrint('Error attaching peripheral state listener: $e');
+    }
   }
 
   Future<void> _checkSupport() async {
+    if (_isCheckingSupport) return;
+    _isCheckingSupport = true;
     try {
       _isSupported = await _peripheral.isSupported;
       notifyListeners();
@@ -37,6 +47,8 @@ class BleAdvertiser extends ChangeNotifier {
       debugPrint('Error checking BLE peripheral support: $e');
       _isSupported = false;
       notifyListeners();
+    } finally {
+      _isCheckingSupport = false;
     }
   }
 
@@ -52,6 +64,8 @@ class BleAdvertiser extends ChangeNotifier {
   /// Byte 10: Target 2 Distance (8-bit decimeters)
   List<int> _buildManufacturerData() {
     final int index = _storageService.getDeviceIndex();
+    final role = _storageService.getDeviceRole();
+    final int roleByte = role == DeviceRole.anchor ? 0x41 : (role == DeviceRole.tracked ? 0x43 : 0x54);
     
     int target1Idx = 0;
     int target1Dist = 0;
@@ -73,7 +87,7 @@ class BleAdvertiser extends ChangeNotifier {
     final List<int> data = [
       0x5A, 0x43, // Protocol ID: 'Z', 'C'
       0x01,       // Version 1
-      0x54,       // Role 'T' (TEST)
+      roleByte,   // Role 'A' (Anchor), 'C' (Central/Tracked), or 'T'
       (index >> 8) & 0xFF,
       index & 0xFF,
       _sequenceNumber & 0xFF,
@@ -85,54 +99,101 @@ class BleAdvertiser extends ChangeNotifier {
     return data;
   }
 
+  bool _isAdvertisingOperationInProgress = false;
+
   Future<void> startAdvertising() async {
-    if (!_isSupported) {
-      await _checkSupport();
+    if (_isAdvertisingOperationInProgress) return;
+    _isAdvertisingOperationInProgress = true;
+
+    try {
       if (!_isSupported) {
-        throw Exception("BLE Advertising is not supported on this device.");
+        await _checkSupport();
+        if (!_isSupported) {
+          debugPrint("BLE Advertising is not supported or Bluetooth is disabled.");
+          _isAdvertising = false;
+          notifyListeners();
+          return;
+        }
       }
+
+      // Cleanly stop any lingering or previous advertisement first
+      try {
+        await _peripheral.stop();
+        await Future.delayed(const Duration(milliseconds: 150));
+      } catch (_) {}
+
+      _sequenceNumber = 0;
+      _packetsSent = 0;
+      
+      await _advertise();
+      
+      // Update packet counters without repeatedly calling startAdvertisingSet on the hardware radio
+      _sequenceTimer?.cancel();
+      _sequenceTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
+        if (_isAdvertising) {
+          _sequenceNumber = (_sequenceNumber + 1) % 256;
+          _packetsSent++;
+          notifyListeners();
+        }
+      });
+
+      _isAdvertising = true;
+      notifyListeners();
+    } catch (e) {
+      debugPrint("startAdvertising caught error: $e");
+      _isAdvertising = false;
+      notifyListeners();
+    } finally {
+      _isAdvertisingOperationInProgress = false;
     }
-
-    _sequenceNumber = 0;
-    _packetsSent = 0;
-    
-    await _advertise();
-    
-    // Start a timer to periodically increment sequence number and update advertisement payload
-    _sequenceTimer?.cancel();
-    _sequenceTimer = Timer.periodic(const Duration(seconds: 5), (timer) async {
-      if (_isAdvertising) {
-        _sequenceNumber = (_sequenceNumber + 1) % 256;
-        _packetsSent++;
-        await _advertise();
-        notifyListeners();
-      }
-    });
-
-    _isAdvertising = true;
-    notifyListeners();
   }
 
   Future<void> _advertise() async {
     try {
       final List<int> manData = _buildManufacturerData();
+      final String advertisedName = _storageService.getDeviceRole() == DeviceRole.anchor
+          ? '${_storageService.getFriendlyName()} [${_storageService.getAssignedRoom()}]'
+          : _storageService.getFriendlyName();
+
       final AdvertiseData advertiseData = AdvertiseData(
         serviceUuid: 'bf27730d-860a-4e09-889c-2d8b6a9e0fe7',
         manufacturerId: 0xFFFF, // Custom Manufacturer ID for testing
         manufacturerData: Uint8List.fromList(manData),
-        localName: _storageService.getFriendlyName(),
+        localName: advertisedName,
         includeDeviceName: true,
       );
       
-      // Stop advertising first if active to release native BLE slots on Android
-      try {
-        await _peripheral.stop();
-      } catch (_) {}
-      
       await _peripheral.start(advertiseData: advertiseData);
+      _isAdvertising = true;
+      notifyListeners();
     } catch (e) {
       debugPrint('Error starting BLE advertisement: $e');
-      rethrow;
+      if (e.toString().contains('ADVERTISE_FAILED_TOO_MANY_ADVERTISERS') || e.toString().contains('2')) {
+        // Hardware advertising slots saturated: force stop and wait for Android radio cleanup
+        try {
+          await _peripheral.stop();
+          await Future.delayed(const Duration(milliseconds: 400));
+          final List<int> manData = _buildManufacturerData();
+          final String advertisedName = _storageService.getDeviceRole() == DeviceRole.anchor
+              ? '${_storageService.getFriendlyName()} [${_storageService.getAssignedRoom()}]'
+              : _storageService.getFriendlyName();
+          final AdvertiseData advertiseData = AdvertiseData(
+            serviceUuid: 'bf27730d-860a-4e09-889c-2d8b6a9e0fe7',
+            manufacturerId: 0xFFFF,
+            manufacturerData: Uint8List.fromList(manData),
+            localName: advertisedName,
+            includeDeviceName: true,
+          );
+          await _peripheral.start(advertiseData: advertiseData);
+          _isAdvertising = true;
+          notifyListeners();
+          return;
+        } catch (retryErr) {
+          debugPrint('Retry after ADVERTISE_FAILED_TOO_MANY_ADVERTISERS failed: $retryErr');
+        }
+      }
+      _isAdvertising = false;
+      notifyListeners();
     }
   }
 

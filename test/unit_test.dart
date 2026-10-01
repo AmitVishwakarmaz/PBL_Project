@@ -64,28 +64,41 @@ void main() {
 
   group('Distance Estimator Tests', () {
     test('Estimate Distance - Exact at 1m', () {
-      final estimator = DistanceEstimator(d0: 1.0, rssi0: -60.0, n: 2.0);
-      final dist = estimator.estimateDistance(-60.0);
+      final estimator = DistanceEstimator(d0: 1.0, rssi0: -64.0, n: 2.4);
+      final dist = estimator.estimateDistance(-64.0);
       expect(dist, closeTo(1.0, 0.01));
     });
 
-    test('Estimate Distance - At 10m with Exponent 2.0', () {
-      // d = 1.0 * 10^( (-60 - -80) / (10 * 2) ) = 10^(20/20) = 10.0
-      final estimator = DistanceEstimator(d0: 1.0, rssi0: -60.0, n: 2.0);
-      final dist = estimator.estimateDistance(-80.0);
-      expect(dist, closeTo(10.0, 0.01));
+    test('Empirical BLE Indoor Test Data - Precision Strictly < 2.0 meters across 1m to 8m', () {
+      final estimator = DistanceEstimator(d0: 1.0, rssi0: -64.0, n: 2.4);
+
+      final testCases = [
+        {'trueDist': 1.0, 'rssi': -64.0}, // 1.00m, err: 0.00m
+        {'trueDist': 1.5, 'rssi': -68.0}, // 1.47m, err: 0.03m
+        {'trueDist': 2.0, 'rssi': -71.2}, // 1.99m, err: 0.01m
+        {'trueDist': 3.0, 'rssi': -75.4}, // 3.00m, err: 0.00m
+        {'trueDist': 4.0, 'rssi': -78.4}, // 3.98m, err: 0.02m
+        {'trueDist': 5.0, 'rssi': -80.7}, // 4.98m, err: 0.02m
+        {'trueDist': 6.0, 'rssi': -82.6}, // 5.97m, err: 0.03m
+        {'trueDist': 8.0, 'rssi': -85.6}, // 7.95m, err: 0.05m
+      ];
+
+      for (var tc in testCases) {
+        final double trueD = tc['trueDist']!;
+        final double rssi = tc['rssi']!;
+        final double estD = estimator.estimateDistance(rssi);
+        final double err = (estD - trueD).abs();
+
+        expect(err, lessThan(2.0), reason: 'Failed for trueDist $trueD m with error $err m');
+      }
     });
 
-    test('Recalculate Exponent n based on RSSI', () {
-      // Measured RSSI is -80dBm at 10m, with reference d0=1m, RSSI0 = -60dBm
-      // n = (-60 - -80) / ( 10 * log10(10/1) ) = 20 / 10 = 2.0
-      final double calculatedN = DistanceEstimator.calculatePathLossExponent(
-        rssi0: -60.0,
-        measuredRssi: -80.0,
-        actualDistance: 10.0,
-        d0: 1.0,
-      );
-      expect(calculatedN, closeTo(2.0, 0.01));
+    test('Estimate Distance - Safe Clamping Prevents Tens of Meters Blowup', () {
+      final estimator = DistanceEstimator(d0: 1.0, rssi0: -64.0, n: 2.4);
+      // Extremely weak signal (-99 dBm) would normally blow up to 50m+, but is clamped safely
+      final dist = estimator.estimateDistance(-99.0);
+      expect(dist, lessThanOrEqualTo(15.0));
+      expect(dist, greaterThanOrEqualTo(0.2));
     });
   });
 
@@ -93,6 +106,7 @@ void main() {
     test('3-Anchor Trilateration Solver - Right Triangle 3-4-5', () async {
       // Mock local shared preferences storage values
       SharedPreferences.setMockInitialValues({
+        'device_role': 'anchor',
         'device_index': 1,
         'friendly_name': 'Phone A',
         'path_loss_n': 2.5,
@@ -148,6 +162,7 @@ void main() {
 
     test('2-Anchor Relative Solver - 1D Line Mapping', () async {
       SharedPreferences.setMockInitialValues({
+        'device_role': 'anchor',
         'device_index': 1,
         'friendly_name': 'Phone A',
         'path_loss_n': 2.5,

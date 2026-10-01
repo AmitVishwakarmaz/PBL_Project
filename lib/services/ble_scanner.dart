@@ -6,6 +6,8 @@ import 'storage_service.dart';
 class ScannedPacket {
   final String deviceId;
   final String friendlyName;
+  final String role; // "ANCHOR", "TRACKED", "TEST"
+  final String roomName;
   final int rssi;
   final int? txPower;
   final int? sequenceNumber;
@@ -17,6 +19,8 @@ class ScannedPacket {
   ScannedPacket({
     required this.deviceId,
     required this.friendlyName,
+    this.role = 'ANCHOR',
+    this.roomName = 'Room A',
     required this.rssi,
     this.txPower,
     this.sequenceNumber,
@@ -123,26 +127,44 @@ class BleScanner extends ChangeNotifier {
       return null;
     }
 
-    // Byte 3: Role ('T' - 0x54)
-    final int role = bytes[3];
-    if (role != 0x54) {
-      return null;
+    // Byte 3: Role ('A' = 0x41, 'C' = 0x43, 'T' = 0x54)
+    final int roleByte = bytes[3];
+    String roleStr = 'ANCHOR';
+    String prefix = 'TEST-A';
+    if (roleByte == 0x43) {
+      roleStr = 'TRACKED';
+      prefix = 'TEST-C';
+    } else if (roleByte == 0x41) {
+      roleStr = 'ANCHOR';
+      prefix = 'TEST-A';
+    } else if (roleByte == 0x54) {
+      roleStr = 'TEST';
+      prefix = 'TEST-A';
+    } else {
+      return null; // Unknown role
     }
 
     // Byte 4-5: Device index
     final int deviceIndex = (bytes[4] << 8) | bytes[5];
-    final String deviceId = 'TEST-A${deviceIndex.toString().padLeft(3, '0')}';
+    final String deviceId = '$prefix${deviceIndex.toString().padLeft(3, '0')}';
 
     // Byte 6: Sequence number
     final int sequenceNumber = bytes[6];
 
-    // Friendly Name
+    // Friendly Name & Room parsing
     String friendlyName = result.advertisementData.localName.trim();
     if (friendlyName.isEmpty) {
       friendlyName = result.device.platformName.trim();
     }
     if (friendlyName.isEmpty) {
-      friendlyName = 'Phone $deviceIndex';
+      friendlyName = roleStr == 'TRACKED' ? 'Tracked $deviceIndex' : 'Anchor $deviceIndex';
+    }
+
+    String roomName = 'Room A';
+    final roomMatch = RegExp(r'\[(.*?)\]').firstMatch(friendlyName);
+    if (roomMatch != null && roomMatch.group(1) != null) {
+      roomName = roomMatch.group(1)!.trim();
+      friendlyName = friendlyName.replaceAll(RegExp(r'\[.*?\]'), '').trim();
     }
 
     // Get TX Power
@@ -163,6 +185,8 @@ class BleScanner extends ChangeNotifier {
     return ScannedPacket(
       deviceId: deviceId,
       friendlyName: friendlyName,
+      role: roleStr,
+      roomName: roomName,
       rssi: result.rssi,
       txPower: txPower,
       sequenceNumber: sequenceNumber,

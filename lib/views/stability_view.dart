@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../services/measurement_repository.dart';
 import '../models/ble_device.dart';
 import '../utils/rssi_processor.dart';
+import '../utils/app_theme.dart';
 import 'widgets/custom_chart.dart';
 
 class StabilityView extends StatefulWidget {
@@ -51,17 +52,17 @@ class _StabilityViewState extends State<StabilityView> {
             .toList();
 
         return SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(AppSpacing.md),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Setup Card
               _buildSetupCard(devices, isTesting, activeType),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.md),
 
               // Live Chart Card
               _buildLiveChartCard(currentBuffer, currentTimeBuffer, stats, range, isTesting, activeType),
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSpacing.md),
 
               // Runs History
               _buildRunsHistoryCard(stabilityRuns),
@@ -77,31 +78,31 @@ class _StabilityViewState extends State<StabilityView> {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
               'STABILITY RUN CONTROL (60 SECONDS)',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.0, color: Color(0xFFD946EF)),
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.8, color: AppColors.primaryAccent),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.md),
             if (devices.isEmpty)
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(AppSpacing.md),
                 decoration: BoxDecoration(
-                  color: Colors.orangeAccent.withOpacity(0.05),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.orangeAccent.withOpacity(0.2)),
+                  color: AppColors.surfaceSubtle,
+                  borderRadius: BorderRadius.circular(AppRadii.md),
+                  border: Border.all(color: AppColors.border),
                 ),
                 child: const Row(
                   children: [
-                    Icon(Icons.warning_amber_rounded, color: Colors.orangeAccent),
-                    SizedBox(width: 12),
+                    Icon(Icons.warning_amber_rounded, color: AppColors.primaryAccent, size: 20),
+                    SizedBox(width: AppSpacing.sm),
                     Expanded(
                       child: Text(
                         'No nearby transmitters detected. Turn on scanning and advertising first.',
-                        style: TextStyle(fontSize: 13, color: Colors.white70),
+                        style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
                       ),
                     ),
                   ],
@@ -112,9 +113,8 @@ class _StabilityViewState extends State<StabilityView> {
                 value: _selectedTargetDeviceId,
                 decoration: const InputDecoration(
                   labelText: 'Target Transmitting Device',
-                  border: OutlineInputBorder(),
                 ),
-                dropdownColor: const Color(0xFF171721),
+                dropdownColor: AppColors.surface,
                 items: devices.map((d) {
                   return DropdownMenuItem<String>(
                     value: d.deviceId,
@@ -123,16 +123,16 @@ class _StabilityViewState extends State<StabilityView> {
                 }).toList(),
                 onChanged: currentRunning ? null : (val) => setState(() => _selectedTargetDeviceId = val),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.md),
 
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  const Text('Test Distance: ', style: TextStyle(fontSize: 13, color: Colors.white70)),
-                  const SizedBox(width: 8),
+                  const Text('Test Distance: ', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                  const SizedBox(width: AppSpacing.xs),
                   DropdownButton<double>(
                     value: _testDistance,
-                    dropdownColor: const Color(0xFF171721),
+                    dropdownColor: AppColors.surface,
                     items: _presetDistances.map((d) {
                       return DropdownMenuItem<double>(
                         value: d,
@@ -144,42 +144,42 @@ class _StabilityViewState extends State<StabilityView> {
                   const Spacer(),
                   Text(
                     'Fixed Duration: $_testDurationSeconds seconds',
-                    style: const TextStyle(fontSize: 13, color: Colors.white54, fontWeight: FontWeight.bold),
+                    style: const TextStyle(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.w600),
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: AppSpacing.md),
 
               if (currentRunning) ...[
                 Column(
                   children: [
                     LinearProgressIndicator(
                       value: (widget.measurementRepository.activeDurationSeconds - widget.measurementRepository.testSecondsRemaining) / widget.measurementRepository.activeDurationSeconds,
-                      backgroundColor: Colors.white12,
-                      color: const Color(0xFF00F0FF),
+                      backgroundColor: AppColors.surfaceSubtle,
+                      color: AppColors.primaryAccent,
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: AppSpacing.sm),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text(
                           'Streaming RSSI values continuously...',
-                          style: TextStyle(color: Color(0xFF00F0FF), fontSize: 13),
+                          style: TextStyle(color: AppColors.primaryAccent, fontSize: 12, fontWeight: FontWeight.w600),
                         ),
                         Text(
                           '${widget.measurementRepository.testSecondsRemaining}s left',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textPrimary),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: AppSpacing.sm),
                     SizedBox(
                       width: double.infinity,
                       child: OutlinedButton(
                         onPressed: () => widget.measurementRepository.stopActiveTest(),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.redAccent,
-                          side: const BorderSide(color: Colors.redAccent, width: 1.5),
+                          foregroundColor: AppColors.error,
+                          side: const BorderSide(color: AppColors.error, width: 1.0),
                         ),
                         child: const Text('STOP STABILITY RECORDING'),
                       ),
@@ -189,10 +189,10 @@ class _StabilityViewState extends State<StabilityView> {
               ] else if (isTesting) ...[
                 Center(
                   child: Padding(
-                    padding: const EdgeInsets.all(8.0),
+                    padding: const EdgeInsets.all(AppSpacing.sm),
                     child: Text(
                       'Another test (${widget.measurementRepository.activeTestType}) is currently active.',
-                      style: const TextStyle(color: Colors.white24, fontStyle: FontStyle.italic),
+                      style: const TextStyle(color: AppColors.textTertiary, fontStyle: FontStyle.italic, fontSize: 12),
                     ),
                   ),
                 ),
@@ -234,7 +234,7 @@ class _StabilityViewState extends State<StabilityView> {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -243,26 +243,38 @@ class _StabilityViewState extends State<StabilityView> {
               children: [
                 const Text(
                   'REAL-TIME RSSI SIGNAL PLOT',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.0, color: Color(0xFF00F0FF)),
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.8, color: AppColors.primaryAccent),
                 ),
-                Text(
-                  currentRunning ? 'Recording' : 'Idle',
-                  style: const TextStyle(fontSize: 12, color: Colors.white30),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceSubtle,
+                    borderRadius: BorderRadius.circular(AppRadii.sm),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Text(
+                    currentRunning ? 'Recording' : 'Idle',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: currentRunning ? AppColors.primaryAccent : AppColors.textTertiary,
+                    ),
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.md),
             RssiChart(
               rssiSamples: currentBuffer,
               timeSamples: currentTimeBuffer,
               durationSeconds: _testDurationSeconds.toDouble(),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.md),
             const Text(
               'LIVE STREAM STATISTICS',
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.0, color: Colors.white54),
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.8, color: AppColors.textSecondary),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.xs),
             Row(
               children: [
                 Expanded(child: _buildChartMetricTile('Samples', '${stats.sampleCount}')),
@@ -286,22 +298,22 @@ class _StabilityViewState extends State<StabilityView> {
   Widget _buildRunsHistoryCard(List<TestSummary> runs) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
               'STABILITY RUN HISTORY LIST',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.0, color: Colors.white54),
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.8, color: AppColors.textSecondary),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.sm),
             if (runs.isEmpty)
               const Center(
                 child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24.0),
+                  padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
                   child: Text(
                     'No completed stability runs recorded yet.',
-                    style: TextStyle(color: Colors.white24, fontStyle: FontStyle.italic),
+                    style: TextStyle(color: AppColors.textTertiary, fontStyle: FontStyle.italic, fontSize: 12),
                   ),
                 ),
               )
@@ -309,27 +321,27 @@ class _StabilityViewState extends State<StabilityView> {
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: DataTable(
-                  columnSpacing: 24,
-                  headingRowColor: MaterialStateProperty.all(const Color(0xFF0F0F13)),
+                  columnSpacing: 20,
+                  headingRowColor: MaterialStateProperty.all(AppColors.surfaceSubtle),
                   columns: const [
-                    DataColumn(label: Text('Device')),
-                    DataColumn(label: Text('Distance')),
-                    DataColumn(label: Text('Samples')),
-                    DataColumn(label: Text('Median')),
-                    DataColumn(label: Text('Mean')),
-                    DataColumn(label: Text('Std Dev')),
-                    DataColumn(label: Text('Range')),
+                    DataColumn(label: Text('Device', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: AppColors.textSecondary))),
+                    DataColumn(label: Text('Distance', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: AppColors.textSecondary))),
+                    DataColumn(label: Text('Samples', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: AppColors.textSecondary))),
+                    DataColumn(label: Text('Median', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: AppColors.textSecondary))),
+                    DataColumn(label: Text('Mean', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: AppColors.textSecondary))),
+                    DataColumn(label: Text('Std Dev', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: AppColors.textSecondary))),
+                    DataColumn(label: Text('Range', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: AppColors.textSecondary))),
                   ],
                   rows: runs.map((run) {
                     return DataRow(
                       cells: [
-                        DataCell(Text(run.targetDeviceId, style: const TextStyle(fontFamily: 'Courier', fontWeight: FontWeight.bold, color: Color(0xFF00F0FF)))),
-                        DataCell(Text('${run.actualDistance.toStringAsFixed(1)} m')),
-                        DataCell(Text('${run.sampleCount}')),
-                        DataCell(Text('${run.medianRssi.toStringAsFixed(1)} dBm')),
-                        DataCell(Text('${run.meanRssi.toStringAsFixed(1)} dBm')),
-                        DataCell(Text(run.rssiStdDev.toStringAsFixed(2))),
-                        DataCell(Text('${(run.rssiStdDev * 3).toStringAsFixed(1)} dB')), // Approx range indicator
+                        DataCell(Text(run.targetDeviceId, style: const TextStyle(fontFamily: 'Courier', fontWeight: FontWeight.bold, color: AppColors.primaryAccent))),
+                        DataCell(Text('${run.actualDistance.toStringAsFixed(1)} m', style: const TextStyle(color: AppColors.textPrimary))),
+                        DataCell(Text('${run.sampleCount}', style: const TextStyle(color: AppColors.textPrimary))),
+                        DataCell(Text('${run.medianRssi.toStringAsFixed(1)} dBm', style: const TextStyle(color: AppColors.textPrimary))),
+                        DataCell(Text('${run.meanRssi.toStringAsFixed(1)} dBm', style: const TextStyle(color: AppColors.textPrimary))),
+                        DataCell(Text(run.rssiStdDev.toStringAsFixed(2), style: const TextStyle(color: AppColors.textPrimary))),
+                        DataCell(Text('${(run.rssiStdDev * 3).toStringAsFixed(1)} dB', style: const TextStyle(color: AppColors.textSecondary))),
                       ],
                     );
                   }).toList(),
@@ -343,23 +355,24 @@ class _StabilityViewState extends State<StabilityView> {
 
   Widget _buildChartMetricTile(String label, String value) {
     return Container(
-      margin: const EdgeInsets.all(4.0),
-      padding: const EdgeInsets.all(8.0),
+      margin: const EdgeInsets.all(3.0),
+      padding: const EdgeInsets.all(AppSpacing.xs),
       decoration: BoxDecoration(
-        color: const Color(0xFF0F0F13),
-        borderRadius: BorderRadius.circular(6),
+        color: AppColors.surfaceSubtle,
+        borderRadius: BorderRadius.circular(AppRadii.sm),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontSize: 10, color: Colors.white30)),
-          const SizedBox(height: 4),
+          Text(label, style: const TextStyle(fontSize: 10, color: AppColors.textSecondary)),
+          const SizedBox(height: 2),
           Text(
             value,
             style: const TextStyle(
-              fontSize: 13,
+              fontSize: 12,
               fontWeight: FontWeight.bold,
-              color: const Color(0xFFEFEFEF),
+              color: AppColors.textPrimary,
             ),
           ),
         ],

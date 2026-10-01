@@ -5,6 +5,7 @@ import '../services/ble_scanner.dart';
 import '../services/measurement_repository.dart';
 import '../models/ble_device.dart';
 import '../utils/rssi_processor.dart';
+import '../utils/app_theme.dart';
 
 class ReportView extends StatelessWidget {
   final BleAdvertiser bleAdvertiser;
@@ -78,7 +79,7 @@ class ReportView extends StatelessWidget {
         final double avgErrorPct = calibrationRuns.isNotEmpty ? (totalPctError / calibrationRuns.length) : 0.0;
 
         return SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(AppSpacing.md),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -89,7 +90,7 @@ class ReportView extends StatelessWidget {
                 isRssiAvailable,
                 avgStdDev,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.md),
 
               // Capabilities Checkbox Card
               _buildCapabilitiesCard(
@@ -98,7 +99,7 @@ class ReportView extends StatelessWidget {
                 isRssiAvailable,
                 isMultipleDevicesDetected,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.md),
 
               // Quality metrics Card
               _buildQualityCard(
@@ -125,45 +126,26 @@ class ReportView extends StatelessWidget {
   ) {
     final bool coreCapabilitiesMet = canAdvertise && canScan && hasRssi;
 
-    Color bannerColor;
-    String titleText;
-    String descText;
-    IconData icon;
-
-    if (!coreCapabilitiesMet) {
-      bannerColor = Colors.redAccent;
-      titleText = "INSUFFICIENT DATA / METRICS FAIL";
-      descText = "Core Bluetooth capabilities are not active or supported on this device. Review the Capability Report below.";
-      icon = Icons.cancel_rounded;
-    } else {
-      bannerColor = const Color(0xFFD946EF);
-      titleText = "SUITABILITY TO BE DETERMINED";
-      descText = "Device supports scanning and advertising. Evaluate the standard deviation ($avgStdDev dB) to determine positioning suitability.";
-      icon = Icons.help_outline_rounded;
-    }
+    final Color statusColor = coreCapabilitiesMet ? AppColors.primaryAccent : AppColors.error;
+    final Color bgColor = coreCapabilitiesMet ? AppColors.surface : AppColors.errorSubtle;
+    final String titleText = coreCapabilitiesMet ? "SUITABILITY TO BE DETERMINED" : "INSUFFICIENT DATA / METRICS FAIL";
+    final String descText = coreCapabilitiesMet
+        ? "Device supports scanning and advertising. Evaluate the standard deviation (${avgStdDev.toStringAsFixed(2)} dB) to determine positioning suitability."
+        : "Core Bluetooth capabilities are not active or supported on this device. Review the Capability Report below.";
+    final IconData icon = coreCapabilitiesMet ? Icons.info_outline_rounded : Icons.cancel_outlined;
 
     return Card(
-      elevation: 6,
-      shadowColor: bannerColor.withOpacity(0.2),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: bannerColor.withOpacity(0.4), width: 1.5),
-      ),
       child: Container(
+        padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: LinearGradient(
-            colors: [bannerColor.withOpacity(0.15), Colors.transparent],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          color: bgColor,
+          borderRadius: BorderRadius.circular(AppRadii.lg),
         ),
-        padding: const EdgeInsets.all(18.0),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, size: 40, color: bannerColor),
-            const SizedBox(width: 16),
+            Icon(icon, size: 28, color: statusColor),
+            const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -171,17 +153,16 @@ class ReportView extends StatelessWidget {
                   Text(
                     titleText,
                     style: TextStyle(
-                      fontFamily: 'Outfit',
-                      fontSize: 18,
-                      fontWeight: FontWeight.w900,
-                      color: bannerColor,
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: statusColor,
                       letterSpacing: 0.5,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   Text(
                     descText,
-                    style: const TextStyle(fontSize: 13, color: Colors.white70),
+                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.4),
                   ),
                 ],
               ),
@@ -200,21 +181,21 @@ class ReportView extends StatelessWidget {
   ) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
               'BLE HARDWARE & CORE CAPABILITY CHECK',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.0, color: Color(0xFF00F0FF)),
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.8, color: AppColors.primaryAccent),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.sm),
             _buildChecklistTile('BLE Peripheral Mode (Advertising)', adv, 'Needed to transmit anchor identity packets.'),
-            const Divider(color: Colors.white10),
+            const Divider(color: AppColors.border),
             _buildChecklistTile('BLE Central Mode (Scanning)', scan, 'Needed to listen for nearby transmitters.'),
-            const Divider(color: Colors.white10),
+            const Divider(color: AppColors.border),
             _buildChecklistTile('RSSI Stream Availability', rssi, 'Needed to capture signal power levels.'),
-            const Divider(color: Colors.white10),
+            const Divider(color: AppColors.border),
             _buildChecklistTile('Multi-Device Detection', multi, 'Requires at least 2 transmitting test nodes active.'),
           ],
         ),
@@ -224,42 +205,49 @@ class ReportView extends StatelessWidget {
 
   Widget _buildChecklistTile(String title, bool pass, String description) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(
             pass ? Icons.check_circle_rounded : Icons.cancel_rounded,
-            color: pass ? const Color(0xFF00F0FF) : Colors.redAccent,
-            size: 24,
+            color: pass ? AppColors.success : AppColors.error,
+            size: 20,
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: pass ? Colors.white : Colors.white60,
-                    fontSize: 14,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                    fontSize: 13,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
                   description,
-                  style: const TextStyle(fontSize: 12, color: Colors.white30),
+                  style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
                 ),
               ],
             ),
           ),
-          Text(
-            pass ? 'PASS' : 'FAIL',
-            style: TextStyle(
-              fontWeight: FontWeight.w900,
-              fontSize: 14,
-              color: pass ? const Color(0xFF00F0FF) : Colors.redAccent,
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: pass ? AppColors.successSubtle : AppColors.errorSubtle,
+              borderRadius: BorderRadius.circular(AppRadii.sm),
+            ),
+            child: Text(
+              pass ? 'PASS' : 'FAIL',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 11,
+                color: pass ? AppColors.success : AppColors.error,
+              ),
             ),
           ),
         ],
@@ -278,33 +266,33 @@ class ReportView extends StatelessWidget {
   ) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
               'MEASUREMENT SIGNAL QUALITY SUMMARY',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.0, color: Color(0xFFD946EF)),
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.8, color: AppColors.primaryAccent),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.sm),
             _buildQualityMetricRow(
               'Average RSSI Standard Deviation',
               avgStdDev > 0 ? '${avgStdDev.toStringAsFixed(2)} dBm' : 'No Data',
               'Lower is better. A value under 3.0 indicates a stable RF environment.',
             ),
-            const Divider(color: Colors.white10),
+            const Divider(color: AppColors.border),
             _buildQualityMetricRow(
               'Best Stable Calibration Distance',
               hasCalibration ? '${bestDist.toStringAsFixed(1)} m (Std Dev: ${bestStd.toStringAsFixed(2)} dBm)' : 'No Data',
               'The known test distance that returned the lowest RSSI variance.',
             ),
-            const Divider(color: Colors.white10),
+            const Divider(color: AppColors.border),
             _buildQualityMetricRow(
               'Worst Stable Calibration Distance',
               hasCalibration ? '${worstDist.toStringAsFixed(1)} m (Std Dev: ${worstStd.toStringAsFixed(2)} dBm)' : 'No Data',
               'The known test distance that returned the highest RSSI variance.',
             ),
-            const Divider(color: Colors.white10),
+            const Divider(color: AppColors.border),
             _buildQualityMetricRow(
               'Avg. Distance Estimation Error',
               hasCalibration ? '${avgError.toStringAsFixed(1)}%' : 'No Data',
@@ -318,7 +306,7 @@ class ReportView extends StatelessWidget {
 
   Widget _buildQualityMetricRow(String label, String value, String desc) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -327,22 +315,22 @@ class ReportView extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.textPrimary),
               ),
               Text(
                 value,
                 style: const TextStyle(
-                  color: Color(0xFF00F0FF),
-                  fontWeight: FontWeight.w900,
-                  fontSize: 14,
+                  color: AppColors.primaryAccent,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           Text(
             desc,
-            style: const TextStyle(fontSize: 11, color: Colors.white30),
+            style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
           ),
         ],
       ),
