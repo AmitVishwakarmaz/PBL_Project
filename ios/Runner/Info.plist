@@ -66,5 +66,27 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<!-- Bluetooth Scanning & Central Mode -->
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>LIVS uses Bluetooth Low Energy to scan for indoor anchor beacons and measure distance.</string>
+
+	<!-- Bluetooth Advertising & Peripheral Mode -->
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>LIVS uses Bluetooth advertising to broadcast beacon signals for indoor position tracking.</string>
+
+	<!-- Local Network Access for Central Server HTTP Sync -->
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>LIVS connects to the central indoor server on your local Wi-Fi network.</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_http._tcp.</string>
+	</array>
+
+	<!-- Background Modes for BLE Operations -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>bluetooth-central</string>
+		<string>bluetooth-peripheral</string>
+	</array>
 </dict>
 </plist>

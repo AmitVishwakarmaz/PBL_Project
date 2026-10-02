@@ -77,9 +77,9 @@ class BleScanner extends ChangeNotifier {
     });
 
     try {
-      // Start scanning in low latency mode
+      // Start scanning in low latency mode (without requiring Android location)
       await FlutterBluePlus.startScan(
-        androidUsesFineLocation: true,
+        androidUsesFineLocation: false,
       );
       _isScanning = true;
       notifyListeners();
@@ -103,16 +103,43 @@ class BleScanner extends ChangeNotifier {
 
   /// Parses a ScanResult to check if it's a valid ZoneCheck test packet.
   /// Decodes company ID 0xFFFF and Protocol ID 0x5A43 ('ZC').
+  /// Parses a ScanResult to check if it's a valid ZoneCheck test packet.
+  /// Decodes company ID 0xFFFF / service UUID 'bf27730d-860a-4e09-889c-2d8b6a9e0fe7' and Protocol ID 0x5A43 ('ZC').
   ScannedPacket? _parseZoneCheckPacket(ScanResult result) {
+    List<int>? bytes;
+
+    // 1. Check manufacturerData maps (0xFFFF / 65535 or matching protocol header)
     final Map<int, List<int>> manufacturerData = result.advertisementData.manufacturerData;
-    
-    // Check if our custom manufacturer ID 0xFFFF exists
-    if (!manufacturerData.containsKey(0xFFFF)) {
-      return null;
+    if (manufacturerData.containsKey(0xFFFF)) {
+      bytes = manufacturerData[0xFFFF];
+    } else if (manufacturerData.containsKey(65535)) {
+      bytes = manufacturerData[65535];
+    } else {
+      for (final entry in manufacturerData.values) {
+        if (entry.length >= 7 && entry[0] == 0x5A && entry[1] == 0x43) {
+          bytes = entry;
+          break;
+        }
+      }
     }
 
-    final List<int> bytes = manufacturerData[0xFFFF]!;
-    if (bytes.length < 7) {
+    // 2. Check serviceData fallback (for iOS CoreBluetooth payload parsing)
+    if (bytes == null || bytes.isEmpty) {
+      final Map<Guid, List<int>> serviceData = result.advertisementData.serviceData;
+      final targetGuid = Guid('bf27730d-860a-4e09-889c-2d8b6a9e0fe7');
+      if (serviceData.containsKey(targetGuid)) {
+        bytes = serviceData[targetGuid];
+      } else {
+        for (final entry in serviceData.values) {
+          if (entry.length >= 7 && entry[0] == 0x5A && entry[1] == 0x43) {
+            bytes = entry;
+            break;
+          }
+        }
+      }
+    }
+
+    if (bytes == null || bytes.length < 7) {
       return null;
     }
 

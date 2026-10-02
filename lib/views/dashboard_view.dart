@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -38,14 +39,22 @@ class _DashboardViewState extends State<DashboardView> {
     _checkPermissions();
   }
 
-  Future<void> _checkPermissions() async {
-    final Map<Permission, PermissionStatus> statuses = {};
-    for (var permission in [
+  List<Permission> get _requiredPermissions {
+    if (Platform.isIOS) {
+      return [
+        Permission.bluetooth,
+      ];
+    }
+    return [
       Permission.bluetoothScan,
       Permission.bluetoothAdvertise,
       Permission.bluetoothConnect,
-      Permission.location,
-    ]) {
+    ];
+  }
+
+  Future<void> _checkPermissions() async {
+    final Map<Permission, PermissionStatus> statuses = {};
+    for (var permission in _requiredPermissions) {
       statuses[permission] = await permission.status;
     }
 
@@ -58,12 +67,7 @@ class _DashboardViewState extends State<DashboardView> {
   }
 
   Future<void> _requestPermissions() async {
-    final statuses = await [
-      Permission.bluetoothScan,
-      Permission.bluetoothAdvertise,
-      Permission.bluetoothConnect,
-      Permission.location,
-    ].request();
+    final statuses = await _requiredPermissions.request();
 
     final allGranted = statuses.values.every((status) => status.isGranted);
 

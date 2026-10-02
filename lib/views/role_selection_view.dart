@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../services/storage_service.dart';
@@ -55,13 +56,18 @@ class _RoleSelectionViewState extends State<RoleSelectionView> {
     setState(() => _isActivating = true);
 
     try {
-      // 1. Request BLE & Location permissions cleanly
-      await [
-        Permission.bluetoothScan,
-        Permission.bluetoothAdvertise,
-        Permission.bluetoothConnect,
-        Permission.location,
-      ].request();
+      // 1. Request Bluetooth permissions cleanly across platforms (no location/GPS requested)
+      if (Platform.isIOS) {
+        await [
+          Permission.bluetooth,
+        ].request();
+      } else {
+        await [
+          Permission.bluetoothScan,
+          Permission.bluetoothAdvertise,
+          Permission.bluetoothConnect,
+        ].request();
+      }
 
       // 2. Persist user configuration
       const String room = 'Room A';
